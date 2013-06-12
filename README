@@ -1,3 +1,64 @@
 N-Sam: A Lightweight N3 Parser in Java
 
-N-Sam is a small parser, written in Java, for parsing N3 files. N-Sam does not recognize complex N3 constructs like formulas, built-ins etc, but N-Sam has no problem with typical N3 documents that include RDF and OWL sentences.
+1. Introduction
+
+N-Sam is a small parser, written in Java, for parsing N3 files. N-Sam has no problem with typical N3 documents that include RDF and OWL sentences, but some complex constructs like embedded formulas and built-ins are not recognized.
+
+2. A Basic Usage
+
+A basic usage of N-Sam parser is as follows:
+
+            ...
+            String url = "file:///usr/etc/sample.n3";
+            NSam parser = new NSam();
+            StatementHandler h = new StatementHandlerImpl();
+            parser.setStatementHandler(h);
+            parser.read(url);
+            ...
+
+Parsed N3 constructs are notified via StatementHandler interface. StatementHandler includes the following notification methods:
+
+void statement(Stirng subject, String predicate, String object, String objectType);
+void prefix(String prefix, String uri);
+void startFormula();
+void endFormula();
+void formulaConnector(String connector);
+
+Details on the methods are provided as javadoc comments in the code.
+
+3. Validation
+
+N3 successfully parsed the following N3 documents:
+
+http://www.agfa.com/w3c/euler/owl-rules.n3
+http://www.w3.org/2000/10/swap/test/lists-simple.n3
+http://www.w3.org/2002/03owlt/sameGuyC.n3
+http://www.w3.org/2002/03owlt/sameGuyP.n3
+http://www.w3.org/2002/03owlt/sameGuyR.n3
+http://www.w3.org/2002/03owlt/sameGuyQ.n3
+http://www.w3.org/2002/03owlt/sameGuyQR.n3
+http://www.w3.org/2002/03owlt/sameGuyT.n3
+http://www.w3.org/2002/03owlt/sameStateC.n3
+http://www.w3.org/2002/03owlt/dbC.n3
+http://www.w3.org/2002/03owlt/dbP.n3
+http://www.w3.org/2002/03owlt/sameStateP.n3
+http://www.w3.org/2002/03owlt/sem-intersectionC.n3
+http://www.w3.org/2002/03owlt/unionOfC.n3
+http://www.w3.org/2002/03owlt/unionOfP.n3
+http://www.agfa.com/w3c/euler/danb.n3
+http://www.agfa.com/w3c/euler/ziv.n3
+http://www.agfa.com/w3c/euler/animal.n3
+http://www.agfa.com/w3c/euler/gedcom-facts.n3
+http://www.w3.org/2000/10/swap/test/s1.n3
+http://www.agfa.com/w3c/euler/owl-facts.n3
+
+And N3 failed with the following documents:
+
+http://www.w3.org/2002/03owlt/sameStateR.n3
+http://www.w3.org/2002/03owlt/sem-intersectionR.n3
+http://www.w3.org/2000/10/swap/test/resolves-rdf.n3
+http://www.w3.org/2000/10/swap/test/contexts.n3
+http://www.w3.org/2000/10/swap/test/includes/quantifiers.n3
+http://dev.w3.org/cvsweb/~checkout~/2000/10/swap/test/ref/strquot.n3
+
+written by zebehn(minsu.jang@me.com)
