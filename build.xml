@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<project name="nsam" default="dist">
+    <property file="build.properties"/>
+    <property name="base.dir" value="."/>
+    <property name="dist.dir" value="dist"/>
+    <property name="build.dir" value="build"/>
+    <property name="src.dir" value="src"/>
+    <property name="grammar.dir" value="grammar"/>
+	<property name="javacc.jar" location="/Users/zebehn/Documents/javacc-5.0/bin/lib/javacc.jar" />
+    <property name="jar.file" value="${version}_nsam.jar"/>
+    <property name="dist.file" value="${version}_nsam.zip"/>
+    
+    <target name="prepare">
+        <tstamp>
+            	<format property="DSTAMP" pattern="yyyy-MM-dd"/>
+            	<format property="TSTAMP" pattern="HH:mm"/>
+        </tstamp>
+        <echo message="Build Started at ${DSTAMP}T${TSTAMP}"/>
+    </target>
+    
+    <target name="clean" depends="prepare">
+        <delete dir="${dist.dir}"/>
+        <delete dir="${build.dir}"/>
+    </target>
+    
+    <target name="compile" depends="clean">
+        <mkdir dir="${build.dir}"/>
+		<java classpath="${javacc.jar}" classname="javacc" fork="true" failonerror="true" maxmemory="256m" dir="${src.dir}/kobaia/nsam">
+			<arg value="nsam.jj" />
+		</java>
+        <javac deprecation="off" srcdir="${src.dir}" destdir="${build.dir}" listfiles="no">
+<!-- 
+            <classpath>
+                <pathelement path="${base.dir}/lib"/>
+                <fileset dir="${base.dir}/lib">
+                    <include name="*.jar"/>
+                </fileset>
+            </classpath>
+ -->
+         </javac>
+    </target>
+    
+    <target name="mkjar" depends="compile">
+        <mkdir dir="${dist.dir}"/>
+        <jar destfile="${dist.dir}/${jar.file}" basedir="${build.dir}" />
+    </target>
+    
+    <target name="dist" depends="mkjar">
+<!--          
+		<mkdir dir="${dist.dir}/lib"/>
+-->
+        <mkdir dir="${dist.dir}/src"/>
+<!--          
+        <copy todir="${dist.dir}/lib">
+            <fileset dir="${base.dir}/lib"/>
+        </copy>
+-->
+        <copy todir="${dist.dir}/src">
+            <fileset dir="${src.dir}"/>
+        </copy>
+        <zip destfile="${DSTAMP}_${dist.file}">
+            <fileset dir="${dist.dir}/.."/>
+        </zip>
+    </target>
+</project>

@@ -1,0 +1,472 @@
+/*
+ * nsam.jj: Javacc grammar for N3
+ * Written by mekanikzain(mekanikzain@gmail.com)
+ * - Revision: $Id: nsam.jj,v 1.5 2006/02/16 09:03:52 zebehn Exp $
+ */
+
+options 
+{ 
+	STATIC = false ; 
+	LOOKAHEAD = 2;
+	ERROR_REPORTING=false;
+	FORCE_LA_CHECK = true;
+	UNICODE_INPUT=true;
+	JAVA_UNICODE_ESCAPE = true;
+}
+
+PARSER_BEGIN(NsamParser) 
+package kobaia.nsam;
+
+import java.net.*;
+import java.io.*;
+import java.util.*;
+
+final class NsamParser
+{
+	protected void setDocumentUrl(String url)
+	{
+		if (url == null)
+		{
+			System.err.println("Document URL is not available. Set it to http://nsam.com/Default/anonymous.n3");
+			url = "http://nsam.com/Default/anonymous.n3";
+		}
+		this.docUrl = url;
+	}
+	
+	protected String getDocumentUrl()
+	{
+		if (this.docUrl == null)
+		{
+			System.err.println("Document URL is not available. Set it to http://nsam.com/Default/anonymous.n3");
+			this.docUrl = "http://nsam.com/Default/anonymous.n3";
+		}
+		return this.docUrl;
+	}
+	
+	protected void setContentHandler(StatementHandler handler)
+	{
+		if (handler == null)
+		{
+			System.err.println("StatementHandler reference is null! Nothing happens...");
+			return;
+		}
+		this.handler = handler;
+	}
+	
+	protected String getURI(QName qname)
+	{
+		if ("_".equals(qname.pref)) return (qname.pref + ":" + qname.lname);
+		if (prefixMap.get("") == null)
+		{
+			String url = getDocumentUrl();
+			prefixMap.put("",
+						 (url.endsWith("/") || url.endsWith("#"))? url : url + "#");
+		}
+		Object nsUri = prefixMap.get(qname.pref);
+		if (nsUri == null && qname.pref != null && qname.pref.length() > 0)
+		{
+			System.err.println("Unknown namespace prefix found: " + qname.pref + " : Cannot proceed.");
+			System.exit(-1);
+		}
+		if (nsUri == null) nsUri = "";
+		//System.out.println("Full URI: " + nsUri + qname.lname);
+		return (nsUri + qname.lname);
+	}
+	
+	protected String getAnonymousId()
+	{
+		return (prefixMap.get("") + "anon" + count++);
+	}
+	
+	protected String getBaseNamespace()
+	{
+		if (prefixMap.get("") == null)
+		{
+			String url = getDocumentUrl();
+			prefixMap.put("",
+						 (url.endsWith("/") || url.endsWith("#"))? url : url + "#");
+		}
+		return (String)prefixMap.get("");
+	}
+	
+	
+	protected String getURI(String uri)
+	{
+		return uri;
+	}
+	
+	protected void pushSubject(String subject)
+	{
+		if (subject == null)
+		{
+			System.err.println("Null Subject!!");
+			return;
+		}
+		this.subjects.addFirst(subject);
+	}
+	
+	protected String currentSubject()
+	{
+		if (this.subjects.size() == 0) return null;
+		return (String)this.subjects.getFirst();
+	}
+	
+	protected String popSubject()
+	{
+		if (this.subjects.isEmpty()) return null;
+		return (String)this.subjects.removeFirst();
+	}
+	
+	protected void cleanSubjects()
+	{
+		this.subjects.clear();
+	}
+	
+	protected void cleanPrefixMap()
+	{
+		this.prefixMap.clear();
+	}
+	
+	private Map prefixMap = new HashMap();
+	private StatementHandler handler = null;
+	private LinkedList subjects = new LinkedList();
+	private int count = 0;
+	private String docUrl = null;
+}
+
+class QName
+{
+	public QName(String pref, String lname)
+	{
+//		assert pref != null && lname != null;
+		this.pref = pref;
+		this.lname = lname;
+	}
+	
+	public String pref = null;
+	public String lname = null;
+}
+
+PARSER_END(NsamParser) 
+
+SKIP : { " " | "\t" | "\r" | "\r\n" | "\n"
+   | <NUMERAL_COMMENT: "#" (~["\n","\r"])* ("\n" | "\r" | "\r\n")> } 
+
+TOKEN : 
+{ 	  <PLUS: "+"> 
+	| <DASH: "-"> 
+	| <SLASH: "/"> 
+	| <ASTERISK: "*">
+	| <LPAREN: "(">
+	| <RPAREN: ")">
+	| <LBRACKET: "["> 
+	| <RBRACKET: "]">
+	| <LBRACE: "{">
+	| <RBRACE: "}">
+	| <COLON: ":">
+	| <SEMICOLON: ";">
+	| <COMMA: ",">
+	| <LT: "<"  >
+	| <GT: ">">
+	| <PERIOD: ".">
+	| <PREFIX: "@prefix">
+	| <HAS: "has">
+	| <GHAS: "@has">
+	| <GIS: "@is">
+	| <IS: "is">
+	| <OF: "of">
+	| <GOF: "@of">
+	| <GOLBAENGI: "@">
+	| <ThisDoc: "<>">
+}
+TOKEN: { <Name: <NCBegin> (<ALPHANUM>)*> 
+			// {System.out.println("Name");}
+	   }
+TOKEN: { <NUMBER: (<DIGIT>)+> }
+TOKEN: { <REAL: <NUMBER> ("." <NUMBER>)? > }
+TOKEN: { <DIGIT: ["0"-"9"] > }
+TOKEN: { <ALPHA: ["a"-"z","A"-"Z","\u0100"-"\uffff"]> 
+			// {System.out.println("ALPHA");}
+	   }
+TOKEN: { <ALPHANUM: <NCBegin> | <DIGIT>> 
+   			// {System.out.println("ALPHANUM");}
+   	   }
+TOKEN: { <NCBegin: <ALPHA> | "_"> 
+			// {System.out.println("NCBegin");}
+	   }
+TOKEN: { <QNamePref: (<Name>)? <COLON> > 
+			// {System.out.println("QNamePref");}
+	   }
+TOKEN: { <QName: <QNamePref> (<Name>)?> 
+			// {System.out.println("QName");}
+	   }
+TOKEN: { <URIRef: <LT> <NCBegin> (<ALPHA> | <DIGIT> | <COLON> | <SLASH> | "." | "#" | "+" | "&" | "?" | "~" | "-" | "_" | <GOLBAENGI>)* <GT>> 
+  		 	// {System.out.println("URIRef");}
+  	   }
+TOKEN: { <FragID: <LT> "#" (<Name>)? <GT>>
+			// {System.out.println("FragID");}
+	   }
+TOKEN: { <Var: "?" <Name>>
+			// {System.out.println("Variable");}
+	   }
+//TOKEN: { <EOL: "\n" > }
+TOKEN: { <STRING : "\"" (~["\""])* "\"" | "'" (~["'"])* "'">}
+TOKEN: { <TypedString: <STRING>"^^"(<QName> | <URIRef>)> }
+
+void triples():
+{
+	String s;
+	String t = "";
+	cleanPrefixMap();
+	cleanSubjects();
+}
+{
+	(
+		prefix() "."
+		|
+		triple() "." {popSubject();}
+		|
+    	 	formula() "."
+	)*
+}
+
+void prefix():
+{
+	String prefix, uri;
+	Token t1=null, t2=null;
+	String s;
+}
+{
+	<PREFIX> 
+	(
+	(t1=<QNamePref> s=uri()
+	{
+		prefix = t1.toString();
+		prefix = prefix.substring(0,prefix.length()-1);
+		prefixMap.put(prefix,s);
+		this.handler.prefix(prefix,s);
+	}
+	)
+	|
+	(<COLON> s=uri()
+	{
+		prefixMap.put("",s);
+		this.handler.prefix("",s);
+	}
+	)
+	)
+}
+
+void triple():
+{
+	String s, o, p;
+	List props;
+}
+{
+   	  s = node()					{//System.out.println("Subject: " + s); 
+        						 	  pushSubject(s);}
+      propertyAndObjectList()
+    |
+    	 ( s=brace() 				{pushSubject(s);}
+    	 | s=bracket()				{pushSubject(s);}
+    	 )
+    	 (propertyAndObjectList()
+    	 )?
+}
+
+void formula():
+{
+	QName qn;
+	boolean yes = false;
+}
+{
+	<LBRACE>				{this.handler.startFormula();}
+	tripleList()
+	<RBRACE>				{popSubject();}	
+	(
+	  qn = qName()		{this.handler.formulaConnector(getURI(qn));}
+	| "=>" 				{this.handler.formulaConnector(LOG.IMPLIES);}
+	)
+	<LBRACE>
+	(tripleList()		{yes = true;}
+	)?
+	<RBRACE>				{
+						 if (yes) popSubject();
+						 this.handler.endFormula();
+						}
+}
+
+void tripleList():
+{
+}
+{
+	triple()
+	(
+	  "."				{popSubject();}
+	  triple()
+	)*
+}
+
+void propertyAndObjectList():
+{
+}
+{
+	propertyAndObject()
+	(";" propertyAndObject())*
+}
+
+void propertyAndObject():
+{
+	List l = new ArrayList();
+	String p, o;
+	String anonymous;
+}
+{
+	p = verb()	{ //System.out.println("Verb: " + p);
+	 			}
+	(
+		object(currentSubject(),p)
+		(<COMMA> object(currentSubject(),p))*
+	)
+}
+
+void object(String subj,String pred):
+{
+	String o;
+	Token t;
+}
+{
+	o = node()					{ 
+								  // System.out.println("Node Recoged.");
+								  String type = RDFS.RESOURCE;
+								  if (o.startsWith("?") || o.startsWith("_")) type = "VARIABLE";
+								  this.handler.statement(subj, pred, o, type); }
+	| 
+	t = <STRING>					{ this.handler.statement(subj, pred, t.toString().substring(1,t.toString().length()-1), XSD.STRING); }
+	|
+	(t = <TypedString>)			{ // System.out.println("Typed String: " + t.toString());
+								  int index = t.toString().indexOf("^^");
+								  String dataString = t.toString().substring(1,index-1);
+								  String typeString = t.toString().substring(index+2);
+								  boolean notQName = typeString.indexOf("/") != -1 || typeString.indexOf("@") != -1;
+								  index = typeString.indexOf(":");
+								  QName qname = new QName(typeString.substring(0,index), typeString.substring(index+1));
+								  this.handler.statement(subj, pred, dataString, getURI(qname));
+								}
+	|
+	t = <NUMBER>					{ this.handler.statement(subj, pred, t.toString(), XSD.INT); }
+	|
+	t = <REAL>					{ this.handler.statement(subj, pred, t.toString(), XSD.DOUBLE); }
+	|
+	o = bracket()				{ this.handler.statement(subj, pred, o, RDFS.RESOURCE); }
+	|
+	o = brace()					{ this.handler.statement(subj, pred, o, RDFS.RESOURCE); }
+}
+
+String node():
+{
+	String s;
+	QName qname;
+	Token t;
+	String anonymous;
+}
+{
+	qname=qName()		{ return getURI(qname); }
+  | s=uri()				{ return s; }
+  | t=<ThisDoc>			{ return getDocumentUrl(); }
+//  | t=<FragID>			{ qname = new QName("",t.toString().substring(2,t.toString().length()-1)); return getURI(qname); }
+  | t=<Var>				{ return t.toString(); }
+}
+
+String verb():
+{
+	String p;
+	Token t;
+}
+{
+  (
+	((<HAS>|<GHAS>) p = node())
+  | ((<IS>|<GIS>) p = node() (<OF>|<GOF>))
+  | p = node()
+  | t = <Name>	{if (t.toString().equals("a")) p=RDF.TYPE; else throw new ParseException("Encountered " + t.toString());}
+  | "=" 			{p=OWL.SAMEAS;}
+  )
+  {
+  	return p;
+  }	 
+}
+
+String bracket():
+{
+	String anonymous;
+}
+{
+      <LBRACKET>					{ 
+        							  pushSubject(getAnonymousId());
+        							}
+      (
+         propertyAndObjectList()
+      )* 
+      <RBRACKET>					{ return popSubject(); }
+
+}
+
+String brace():
+{
+	String anonymous;
+	String list, rest;
+	String n;
+}
+{
+	<LPAREN>						{ list = getAnonymousId(); 
+								  //System.out.println("Paren Opened with " + list); 
+								}
+		object(list, RDF.FIRST)		{
+									  anonymous = list;
+									}
+		(                           { rest = getAnonymousId(); }
+		object(rest, RDF.FIRST)		{
+									  this.handler.statement(list, RDF.REST, rest, RDFS.RESOURCE);
+									  list = rest;
+									}
+		)*
+	<RPAREN>						{ this.handler.statement(list, RDF.REST, RDF.NIL, RDFS.RESOURCE); 
+									  return anonymous;
+									}
+	|
+	<LPAREN><RPAREN>					{
+										return RDF.NIL;
+									}
+}
+
+QName qName():
+{
+	Token p=null, n=null;
+}
+{
+	p=<QName>
+	{ //System.out.println("QName: " + (p==null?"":p.toString())); 
+	 int index = p.toString().indexOf(":");
+	 return new QName(p.toString().substring(0,index),p.toString().substring(index+1));}
+	|
+	<COLON>
+	{
+	return new QName("","");
+	}
+}
+
+String uri():
+{
+	Token t;
+}
+{
+	t=<URIRef>
+	{
+		return t.toString().substring(1,t.toString().length()-1);
+	}
+	|
+	t=<FragID>
+	{
+		return t.toString().substring(1,t.toString().length()-1);
+	}
+}
