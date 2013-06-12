@@ -1,0 +1,3 @@
+N-Sam: A Lightweight N3 Parser in Java
+
+N-Sam is a small parser, written in Java, for parsing N3 files. N-Sam does not recognize complex N3 constructs like formulas, built-ins etc, but N-Sam has no problem with typical N3 documents that include RDF and OWL sentences.
